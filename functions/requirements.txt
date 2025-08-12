@@ -2,4 +2,3 @@ firebase_functions
 firebase_admin
 requests
 beautifulsoup4
-bs4
