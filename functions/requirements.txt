@@ -1,1 +1,5 @@
-firebase_functions~=0.1.0
+firebase_functions
+firebase_admin
+requests
+beautifulsoup4
+bs4
