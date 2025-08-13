@@ -20,28 +20,27 @@ def home():
 @app.get("/refresh")
 def refreshMatchList():
     try:
-        refreshedMatches = maclar(get_match_code())
+        data = maclar(get_match_code())
+        allMatches=data[0]
+        sumMatches=data[1]
+        detailedRef = db.reference("matchesDetailed")
         matchesRef = db.reference("matches")
-        matchesRef.set({})
-        for key, value in refreshedMatches.items():
-            matchesRef.update({key: value})
+
+        matchesRef.set(sumMatches)
+        detailedRef.set(allMatches)
         return flask.Response(status=201, response="Success")
     except Exception as a:
-        return flask.Response(status=201, response=str(a))
+        return flask.Response(status=401, response=str(a))
 
 
 @app.get("/details")
 @app.get("/details/<id>")
 def matchDetails(id=None):
     if id is not None:
-        return db.reference(f"/matches/{id}").get()
+        return db.reference(f"/matchesDetailed/{id}").get()
     else:
         matches_ref=db.reference("/matches").get()
-        result = [
-            {key: value.get("Taraflar")}
-            for key, value in matches_ref.items()
-        ]
-        return 
+        return matches_ref
 
 @https_fn.on_request()
 def httpsflaskexample(req: https_fn.Request) -> https_fn.Response:
