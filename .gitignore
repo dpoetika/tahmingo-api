@@ -68,5 +68,5 @@ node_modules/
 # dataconnect generated files
 .dataconnect
 
-odds.py
+get_odds.py
 get_match_code.py

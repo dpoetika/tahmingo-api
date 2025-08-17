@@ -2,11 +2,7 @@ from firebase_functions import https_fn
 from firebase_functions.options import set_global_options
 from firebase_admin import initialize_app,db
 import flask
-from bs4 import BeautifulSoup
-import ast
-import requests
-import json
-from odds import maclar
+from get_odds import get_odds
 from get_match_code import get_match_code
 
 set_global_options(max_instances=10)
@@ -19,15 +15,23 @@ def home():
 
 @app.get("/refresh")
 def refreshMatchList():
-    try:
-        data = maclar(get_match_code())
-        allMatches=data[0]
-        sumMatches=data[1]
-        detailedRef = db.reference("matchesDetailed")
-        matchesRef = db.reference("matches")
+    detailedRef = db.reference("matchesDetailed")
+    matchesRef = db.reference("matches")
 
-        matchesRef.set(sumMatches)
-        detailedRef.set(allMatches)
+    matchesRef.set({})
+    detailedRef.set({})
+    index = 0
+    try:
+        match_codes = get_match_code()
+        for match_code in match_codes:
+            data = get_odds(match_code)
+            allOdds=data[0]
+            sumOdds=data[1]
+            matchesRef.update(sumOdds)
+            detailedRef.update(allOdds)
+            if index == 2:
+                break
+            index +=1
         return flask.Response(status=201, response="Success")
     except Exception as a:
         return flask.Response(status=401, response=str(a))
