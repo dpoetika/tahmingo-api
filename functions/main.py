@@ -36,14 +36,10 @@ def refreshMatchList():
     except Exception as a:
         return flask.Response(status=401, response=str(a))
 
-
+        
 @app.get("/check")
 def checkCoupons():
     try:
-        users = db.reference("users").get()  
-        if not users:
-            return flask.Response(status=200, response="No users found")
-
         for username, userData in users.items():
             if not userData:
                 continue
@@ -53,21 +49,23 @@ def checkCoupons():
                 continue
 
             for couponId, coupon in coupons.items():
-                matches = coupon.get("matches", {})
+                matches = coupon.get("matches", [])
                 if not matches:
                     continue
-
+                
                 all_correct = True
-
-                for match in matches.values():  # 🔹 dict.values() kullanıyoruz
-                    isTrue = check(
-                        match.get("id"),
-                        match.get("iddaa"),
-                        match.get("tahmin")
-                    )
-                    if not isTrue:
-                        all_correct = False
-                        break
+                for match_id in matches:  # 🔹 matches artık liste
+                    for match in match_id.values():
+                        
+                        
+                        isTrue = check(
+                            match.get("id"),
+                            match.get("iddaa"),
+                            match.get("tahmin")
+                        )
+                        if not isTrue:
+                            all_correct = False
+                            break
 
                 if all_correct:
                     win_amount = float(coupon.get("bet", 0)) * float(coupon.get("odd", 1))
