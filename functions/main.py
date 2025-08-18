@@ -36,17 +36,51 @@ def refreshMatchList():
     except Exception as a:
         return flask.Response(status=401, response=str(a))
 
+
 @app.get("/check")
 def checkCoupons():
-    usersRef = db.reference("users").get()
-    for username in usersRef:
-        coupons = username["coupons"]
-        for coupon in coupons:
-            isTrue = check(coupon["id"],coupon["iddaa"],coupon["Tahmin"])
-            if isTrue:
-                usersRef.update({username:{"Balance":coupon["bet"]*coupon["odd"]}})
-    return flask.Response(status=201, response="Success")
-    
+    try:
+        users = db.reference("users").get()  
+        if not users:
+            return flask.Response(status=200, response="No users found")
+
+        for username, userData in users.items():
+            if not userData:
+                continue
+
+            coupons = userData.get("coupons", {})
+            if not coupons:
+                continue
+
+            for couponId, coupon in coupons.items():
+                matches = coupon.get("matches", {})
+                if not matches:
+                    continue
+
+                all_correct = True
+
+                for match in matches.values():  # 🔹 dict.values() kullanıyoruz
+                    isTrue = check(
+                        match.get("id"),
+                        match.get("iddaa"),
+                        match.get("tahmin")
+                    )
+                    if not isTrue:
+                        all_correct = False
+                        break
+
+                if all_correct:
+                    win_amount = float(coupon.get("bet", 0)) * float(coupon.get("odd", 1))
+                    balance_ref = db.reference(f"users/{username}/Balance")
+                    current_balance = balance_ref.get() or 0
+                    balance_ref.set(current_balance + win_amount)
+
+        return flask.Response(status=201, response="Success")
+
+    except Exception as err:
+        print("checkCoupons error:", str(err))
+        return flask.Response(status=401, response=str(err))
+
 
 @app.post("/coupons")
 def postCoupons():
@@ -68,7 +102,7 @@ def postCoupons():
                 "oran": coupon["Oran"],
                 "tahmin":coupon["Tahmin"]
             })
-            odd *= coupon["Oran"]  # çarpım hesabı
+            odd *= float(coupon["Oran"])  # çarpım hesabı
 
         # bütün maçları ve hesaplanan odd'u tek kupon altında push et
         ref.push({
