@@ -68,6 +68,6 @@ node_modules/
 # dataconnect generated files
 .dataconnect
 
+functions/check.py
 get_odds.py
 get_match_code.py
-functions/check.py
