@@ -4,7 +4,7 @@ from firebase_admin import initialize_app,db
 import flask
 from get_odds import get_odds
 from get_match_code import get_match_code
-
+from check import check
 set_global_options(max_instances=10)
 initialize_app()
 app = flask.Flask(__name__)
@@ -17,9 +17,7 @@ def home():
 def refreshMatchList():
     detailedRef = db.reference("matchesDetailed")
     matchesRef = db.reference("matches")
-    lastDayRef = db.reference("lastDay")
 
-    lastDayRef.set({matchesRef})
     matchesRef.set({})
     detailedRef.set({})
     index = 0
@@ -37,6 +35,14 @@ def refreshMatchList():
         return flask.Response(status=201, response="Success")
     except Exception as a:
         return flask.Response(status=401, response=str(a))
+
+@app.get("/check")
+def checkCoupons():
+    usersRef = db.reference("users").get()
+    print(usersRef)
+    return flask.Response(status=201, response="Success")
+    
+
 
 @app.get("/coupons")
 def getCoupons():
