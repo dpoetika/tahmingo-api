@@ -17,7 +17,9 @@ def home():
 def refreshMatchList():
     detailedRef = db.reference("matchesDetailed")
     matchesRef = db.reference("matches")
+    lastDayRef = db.reference("lastDay")
 
+    lastDayRef.set({matchesRef})
     matchesRef.set({})
     detailedRef.set({})
     index = 0
@@ -36,6 +38,26 @@ def refreshMatchList():
     except Exception as a:
         return flask.Response(status=401, response=str(a))
 
+@app.get("/coupons")
+def getCoupons():
+    data = flask.request.get_json()
+    name = data.get('name')
+
+    if not name:
+        return flask.Response(status=401, response="Invalid Credentials")
+
+    return db.reference(f"coupons/{name}").get()
+    
+@app.post("/coupons")
+def getCoupons():
+    data = flask.request.get_json()
+    name = data.get('name')
+    if not name:
+        return flask.Response(status=401, response="Invalid Credentials")
+    ref = db.reference(f"user/{name}")
+    ref.push({
+        "sa":"as"
+    })
 
 @app.get("/details")
 @app.get("/details/<id>")
