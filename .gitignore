@@ -70,4 +70,4 @@ node_modules/
 
 get_odds.py
 get_match_code.py
-check.py
+functions/check.py

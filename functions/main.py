@@ -39,40 +39,47 @@ def refreshMatchList():
 @app.get("/check")
 def checkCoupons():
     usersRef = db.reference("users").get()
-    print(usersRef)
+    for username in usersRef:
+        coupons = username["coupons"]
+        for coupon in coupons:
+            isTrue = check(coupon["id"],coupon["iddaa"],coupon["Tahmin"])
+            if isTrue:
+                usersRef.update({username:{"Balance":coupon["bet"]*coupon["odd"]}})
     return flask.Response(status=201, response="Success")
     
 
-
-@app.get("/coupons")
-def getCoupons():
-    data = flask.request.get_json()
-    username = data.get('username')
-
-    if not username:
-        return flask.Response(status=401, response="Invalid Credentials")
-
-    return db.reference(f"users/{username}/coupons").get()
-    
 @app.post("/coupons")
 def postCoupons():
     data = flask.request.get_json()
     username = data.get('username')
-    id = data.get('id')
-    taraflar = data.get('taraflar')
-    iddaa = data.get('iddaa')
-    oran = data.get('oran')
-    if not (id and taraflar and iddaa and oran):
+    coupons = data.get('coupons')
+    if not (username and coupons):
         return flask.Response(status=401, response="Invalid Credentials")
+    
     ref = db.reference(f"users/{username}/coupons")
-    ref.push({
-        "id":id,
-        "taraflar":taraflar,
-        "iddaa":iddaa,
-        "oran":oran
-    })
-    return flask.Response(status=201, response="Success")
+    try:
+        odd = 1
+        matches = []  # tüm maçları buraya toplayacağız
+        for coupon in coupons:
+            matches.append({
+                "id": coupon["id"],
+                "taraflar": coupon["Taraflar"],
+                "iddaa": coupon["iddaa"],
+                "oran": coupon["Oran"],
+                "tahmin":coupon["Tahmin"]
+            })
+            odd *= coupon["Oran"]  # çarpım hesabı
 
+        # bütün maçları ve hesaplanan odd'u tek kupon altında push et
+        ref.push({
+            "matches": matches,
+            "odd": odd
+        })
+        return flask.Response(status=201, response="Success")
+    except Exception as err:
+        print(str(err))
+        return flask.Response(status=401, response={"msg": str(err)})
+        
 @app.get("/details")
 @app.get("/details/<id>")
 def matchDetails(id=None):
