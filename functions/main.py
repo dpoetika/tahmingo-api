@@ -41,23 +41,31 @@ def refreshMatchList():
 @app.get("/coupons")
 def getCoupons():
     data = flask.request.get_json()
-    name = data.get('name')
+    username = data.get('username')
 
-    if not name:
+    if not username:
         return flask.Response(status=401, response="Invalid Credentials")
 
-    return db.reference(f"coupons/{name}").get()
+    return db.reference(f"users/{username}/coupons").get()
     
 @app.post("/coupons")
-def getCoupons():
+def postCoupons():
     data = flask.request.get_json()
-    name = data.get('name')
-    if not name:
+    username = data.get('username')
+    id = data.get('id')
+    taraflar = data.get('taraflar')
+    iddaa = data.get('iddaa')
+    oran = data.get('oran')
+    if not (id and taraflar and iddaa and oran):
         return flask.Response(status=401, response="Invalid Credentials")
-    ref = db.reference(f"user/{name}")
+    ref = db.reference(f"users/{username}/coupons")
     ref.push({
-        "sa":"as"
+        "id":id,
+        "taraflar":taraflar,
+        "iddaa":iddaa,
+        "oran":oran
     })
+    return flask.Response(status=201, response="Success")
 
 @app.get("/details")
 @app.get("/details/<id>")
