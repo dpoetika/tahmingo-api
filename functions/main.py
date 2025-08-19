@@ -18,14 +18,14 @@ def home():
 def login():
     try:
         data = flask.request.get_json()
-        username = data.get('username')
+        mail = data.get('mail')
         password = data.get('password')
         
-        if not (username and password):
-            return flask.Response(status=401, response="Username and password required")
+        if not (mail and password):
+            return flask.Response(status=401, response="mail and password required")
         
         # Get user from database
-        user_ref = db.reference(f"users/{username}")
+        user_ref = db.reference(f"users/{mail}")
         user_data = user_ref.get()
         
         if not user_data:
@@ -38,9 +38,10 @@ def login():
         
         # Return user info (excluding password)
         user_info = {
-            "username": username,
+            "mail": mail,
             "balance": user_data.get('Balance', 0),
-            "coupons": user_data.get('coupons', {})
+            "coupons": user_data.get('coupons', {}),
+            "username":user_data.get('username')
         }
         
         return flask.Response(
@@ -58,23 +59,26 @@ def register():
     try:
         data = flask.request.get_json()
         username = data.get('username')
+        mail = data.get('mail')
         password = data.get('password')
         
-        if not (username and password):
-            return flask.Response(status=401, response="Username and password required")
+        if not (username and password and mail):
+            return flask.Response(status=401, response="Invalid Credentials")
         
         # Check if user already exists
-        user_ref = db.reference(f"users/{username}")
+        user_ref = db.reference(f"users/{mail}")
         existing_user = user_ref.get()
         
         if existing_user:
-            return flask.Response(status=401, response="User already exists")
+            return flask.Response(status=401, response="Mail is already in use")
         
         # Create new user
         user_data = {
+            "username":username,
             "password": password,
             "Balance": 200,
-            "coupons": {}
+            "coupons": {},
+            "mail":mail,
         }
         
         user_ref.set(user_data)
@@ -163,6 +167,7 @@ def postCoupons():
     data = flask.request.get_json()
     username = data.get('username')
     coupons = data.get('coupons')
+    bet = data.get('coupons')
     if not (username and coupons):
         return flask.Response(status=401, response="Invalid Credentials")
     
@@ -183,12 +188,13 @@ def postCoupons():
         # bütün maçları ve hesaplanan odd'u tek kupon altında push et
         ref.push({
             "matches": matches,
-            "odd": odd
+            "odd": odd,
+            "bet":bet,
         })
         return flask.Response(status=201, response="Success")
     except Exception as err:
         print(str(err))
-        return flask.Response(status=401, response={"msg": str(err)})
+        return flask.Response(status=401, response=str(err))
         
 @app.get("/details")
 @app.get("/details/<id>")
