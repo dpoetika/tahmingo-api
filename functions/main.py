@@ -13,6 +13,78 @@ app = flask.Flask(__name__)
 def home():
     return flask.Response(status=201, response="Server is alive")
 
+
+@app.post("/login")
+def login():
+    try:
+        data = flask.request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not (username and password):
+            return flask.Response(status=401, response="Username and password required")
+        
+        # Get user from database
+        user_ref = db.reference(f"users/{username}")
+        user_data = user_ref.get()
+        
+        if not user_data:
+            return flask.Response(status=401, response="User not found")
+        
+        # Check password
+        stored_password = user_data.get('password')
+        if stored_password != password:
+            return flask.Response(status=401, response="Invalid password")
+        
+        # Return user info (excluding password)
+        user_info = {
+            "username": username,
+            "balance": user_data.get('Balance', 0),
+            "coupons": user_data.get('coupons', {})
+        }
+        
+        return flask.Response(
+            status=200, 
+            response=flask.json.dumps(user_info),
+            mimetype='application/json'
+        )
+        
+    except Exception as err:
+        print("Login error:", str(err))
+        return flask.Response(status=401, response=str(err))
+
+@app.post("/register")
+def register():
+    try:
+        data = flask.request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        if not (username and password):
+            return flask.Response(status=401, response="Username and password required")
+        
+        # Check if user already exists
+        user_ref = db.reference(f"users/{username}")
+        existing_user = user_ref.get()
+        
+        if existing_user:
+            return flask.Response(status=401, response="User already exists")
+        
+        # Create new user
+        user_data = {
+            "password": password,
+            "Balance": 200,
+            "coupons": {}
+        }
+        
+        user_ref.set(user_data)
+        
+        return flask.Response(status=201, response="User created successfully")
+        
+    except Exception as err:
+        print("Register error:", str(err))
+        return flask.Response(status=401, response=str(err))
+
 @app.get("/refresh")
 def refreshMatchList():
     detailedRef = db.reference("matchesDetailed")
@@ -36,7 +108,6 @@ def refreshMatchList():
     except Exception as a:
         return flask.Response(status=401, response=str(a))
 
-
 @app.get("/check")
 def checkCoupons():
     try:
@@ -45,21 +116,26 @@ def checkCoupons():
             return flask.Response(status=200, response="No users found")
 
         for username, userData in users.items():
+            
             if not userData:
                 continue
-
+            print(f"username : {username}")
+            print(f"userData : {userData}")
             coupons = userData.get("coupons", {})
+            print(f"coupons : {coupons}")
             if not coupons:
                 continue
 
             for couponId, coupon in coupons.items():
-                matches = coupon.get("matches", {})
+                print(f"coupon : {coupon}")
+                matches = coupon.get("matches", [])
+                print(f"matches : {matches}")
                 if not matches:
                     continue
-
+                
                 all_correct = True
-
-                for match in matches.values():  # 🔹 dict.values() kullanıyoruz
+                for match in matches:  # 🔹 matches artık liste, her eleman dict
+                    print(f"match : {match}")
                     isTrue = check(
                         match.get("id"),
                         match.get("iddaa"),
