@@ -18,14 +18,14 @@ def home():
 def login():
     try:
         data = flask.request.get_json()
-        mail = data.get('mail')
+        username = data.get('username')
         password = data.get('password')
         
-        if not (mail and password):
-            return flask.Response(status=401, response="mail and password required")
+        if not (username and password):
+            return flask.Response(status=401, response="username and password required")
         
         # Get user from database
-        user_ref = db.reference(f"users/{mail}")
+        user_ref = db.reference(f"users/{username}")
         user_data = user_ref.get()
         
         if not user_data:
@@ -38,8 +38,7 @@ def login():
         
         # Return user info (excluding password)
         user_info = {
-            "mail": mail,
-            "balance": user_data.get('Balance', 0),
+            "balance": user_data.get('balance', 0),
             "coupons": user_data.get('coupons', {}),
             "username":user_data.get('username')
         }
@@ -59,26 +58,24 @@ def register():
     try:
         data = flask.request.get_json()
         username = data.get('username')
-        mail = data.get('mail')
         password = data.get('password')
         
-        if not (username and password and mail):
+        if not (username and password):
             return flask.Response(status=401, response="Invalid Credentials")
         
         # Check if user already exists
-        user_ref = db.reference(f"users/{mail}")
+        user_ref = db.reference(f"users/{username}")
         existing_user = user_ref.get()
         
         if existing_user:
-            return flask.Response(status=401, response="Mail is already in use")
+            return flask.Response(status=401, response="Username is already in use")
         
         # Create new user
         user_data = {
             "username":username,
             "password": password,
-            "Balance": 200,
+            "balance": 200,
             "coupons": {},
-            "mail":mail,
         }
         
         user_ref.set(user_data)
@@ -123,8 +120,6 @@ def checkCoupons():
             
             if not userData:
                 continue
-            print(f"username : {username}")
-            print(f"userData : {userData}")
             coupons = userData.get("coupons", {})
             print(f"coupons : {coupons}")
             if not coupons:
@@ -151,7 +146,7 @@ def checkCoupons():
 
                 if all_correct:
                     win_amount = float(coupon.get("bet", 0)) * float(coupon.get("odd", 1))
-                    balance_ref = db.reference(f"users/{username}/Balance")
+                    balance_ref = db.reference(f"users/{username}/balance")
                     current_balance = balance_ref.get() or 0
                     balance_ref.set(current_balance + win_amount)
 
@@ -167,7 +162,7 @@ def postCoupons():
     data = flask.request.get_json()
     username = data.get('username')
     coupons = data.get('coupons')
-    bet = data.get('coupons')
+    betAmount = data.get('betAmount')
     if not (username and coupons):
         return flask.Response(status=401, response="Invalid Credentials")
     
@@ -189,8 +184,11 @@ def postCoupons():
         ref.push({
             "matches": matches,
             "odd": odd,
-            "bet":bet,
+            "betAmount":betAmount,
         })
+        balance_ref = db.reference(f"users/{username}/balance")
+        current_balance = balance_ref.get() or 0
+        balance_ref.set(current_balance - betAmount)
         return flask.Response(status=201, response="Success")
     except Exception as err:
         print(str(err))
