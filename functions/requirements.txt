@@ -3,3 +3,4 @@ firebase_admin
 requests
 beautifulsoup4
 flask
+bcrypt
