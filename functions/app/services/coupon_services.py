@@ -17,12 +17,12 @@ def post_coupon(data):
         for coupon in coupons:
             matches.append({
                 "id": coupon["id"],
-                "taraflar": coupon["Taraflar"],
+                "taraflar": coupon["taraflar"],
                 "iddaa": coupon["iddaa"],
-                "oran": coupon["Oran"],
-                "tahmin": coupon["Tahmin"]
+                "oran": coupon["oran"],
+                "tahmin": coupon["tahmin"]
             })
-            odd *= float(coupon["Oran"])
+            odd *= float(coupon["oran"])
         
         ref.push({
             "matches": matches,
