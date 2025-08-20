@@ -15,6 +15,7 @@ def create_coupon(current_user):
     result, status_code = post_coupon(data)
     return jsonify(result), status_code
 
+
 @coupons_bp.get("/check")
 @rate_limit
 @token_required

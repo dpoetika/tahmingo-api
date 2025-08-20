@@ -5,6 +5,7 @@ def post_coupon(data):
     username = data.get('username')
     coupons = data.get('coupons')
     betAmount = data.get('betAmount')
+    id = data.get('id')
     
     if not (username and coupons):
         return {"error": "Invalid Credentials"}, 401
@@ -24,7 +25,7 @@ def post_coupon(data):
             })
             odd *= float(coupon["oran"])
         
-        ref.push({
+        ref.child(id).set({
             "matches": matches,
             "odd": odd,
             "betAmount": betAmount,

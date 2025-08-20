@@ -19,11 +19,12 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.matches import matches_bp
     from app.routes.coupons import coupons_bp
+    from app.routes.forum import forum_bp
     
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(matches_bp, url_prefix='/matches')
     app.register_blueprint(coupons_bp, url_prefix='/coupons')
-    
+    app.register_blueprint(forum_bp, url_prefix='/forum')
     # Kök route
     @app.get("/")
     @rate_limit
