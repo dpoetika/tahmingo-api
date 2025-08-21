@@ -27,7 +27,7 @@ def post_coupon(data):
         
         ref.child(id).set({
             "matches": matches,
-            "odd": odd,
+            "odd": round(odd,2),
             "betAmount": betAmount,
         })
         
