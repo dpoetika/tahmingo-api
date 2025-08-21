@@ -8,8 +8,6 @@ def refresh_matches():
 
     matchesRef.set({})
     detailedRef.set({})
-    index = 0
-    
     try:
         match_codes = get_match_code()
         for match_code in match_codes:
@@ -18,9 +16,7 @@ def refresh_matches():
             sumOdds = data[1]
             matchesRef.update(sumOdds)
             detailedRef.update(allOdds)
-            if index == 2:
-                break
-            index += 1
+            
         return {"message": "Success"}, 201
     except Exception as e:
         return {"error": str(e)}, 401
