@@ -308,24 +308,6 @@ curl http://localhost:8080/health
 curl http://localhost:8080/
 ```
 
-## 📝 Lisans
-
-Bu proje özel kullanım için geliştirilmiştir.
-
-## 🤝 Katkıda Bulunma
-
-1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/AmazingFeature`)
-3. Commit yapın (`git commit -m 'Add some AmazingFeature'`)
-4. Push yapın (`git push origin feature/AmazingFeature`)
-5. Pull Request oluşturun
-
-## 📞 İletişim
-
-Proje sahibi: [Adınız]
-Email: [email@example.com]
-
----
 
 **TahminGO Backend API** - Futbol tahmin uygulamanız için güçlü ve güvenli backend servisi 🚀⚽
 
