@@ -1,104 +1,332 @@
-# Mackolik API (Firebase Functions - Python)
+# TahminGO Backend API
 
-Bu proje, Mackolik arşivinden maç ve oran verilerini scrape ederek Firebase Realtime Database’e yazan bir Cloud Functions (Python) uygulamasıdır.
+TahminGO uygulaması için geliştirilmiş, Firebase Functions üzerinde çalışan modern bir backend API servisi.
 
-## Özellikler
-- **HTTP ile tetiklenen fonksiyonlar**:
-  - `mackolik`: Basit sağlık kontrolü ("Hello world!")
-  - `digersekme`: Mackolik arşivinden aktif maç kodlarını toplar, her maç için oranları çeker ve `maclar` düğümüne yazar
-- **Scraping**: `requests` + `beautifulsoup4` (BS4)
-- **Firebase Realtime Database** entegrasyonu
-- **Uzun scraping işlemi**: `digersekme` fonksiyonunda `timeout_sec=540`
+## 🚀 Özellikler
 
-## Mimari
-- `functions/main.py`: Tüm fonksiyonlar ve scraping mantığı
-  - `get_match_code()` → `https://arsiv.mackolik.com/Iddaa-Programi` içinden maç kodlarını toplar
-  - `maclar(matches)` → Her maç için `https://arsiv.mackolik.com/Match/Default.aspx?id={match_code}` sayfasından oranları parse eder
-  - `digersekme` → Yukarıdaki iki fonksiyonu birleştirip sonuçları Realtime DB `maclar` düğümüne `update` eder
-- `firebase.json`: Çalışma zamanı (`python313`) ve RTDB kural dosyası (`dbrules.json`) ayarı
-- `dbrules.json`: Realtime Database kuralları (geliştirme için herkese açık; prod için kısıtlayın)
-- `functions/requirements.txt`: Bağımlılıklar
+- **Futbol Maç Tahminleri**: Mackolik.com'dan canlı maç verileri ve oranları
+- **Kullanıcı Yönetimi**: Güvenli kayıt, giriş ve JWT token sistemi
+- **Kupon Sistemi**: Maç tahminlerini birleştirerek kupon oluşturma
+- **Forum Sistemi**: Kullanıcılar arası etkileşim ve blog paylaşımı
+- **Otomatik Sonuç Kontrolü**: Maç sonuçlarını otomatik kontrol eden sistem
+- **Rate Limiting**: API kullanımını sınırlayan güvenlik sistemi
+- **Firebase Entegrasyonu**: Gerçek zamanlı veritabanı desteği
 
-## Gereksinimler
-- Python 3.13 (önerilen, `firebase.json` ile uyumlu)
-- Firebase CLI (giriş ve dağıtım için)
-- Bir Firebase projesi (Realtime Database etkin)
+## 🏗️ Mimari Yapı
 
-## Kurulum (Yerel)
-Windows PowerShell için örnek:
-```powershell
-# Proje kökünden çalıştırın
-python -m venv functions\venv
-functions\venv\Scripts\python -m pip install --upgrade pip
-
-# Önemli: yalnızca 'beautifulsoup4' kullanın
-functions\venv\Scripts\python -m pip install -r functions\requirements.txt
+```
+functions/
+├── app/
+│   ├── __init__.py          # Flask uygulama fabrikası
+│   ├── routes/              # API endpoint'leri
+│   │   ├── auth.py         # Kimlik doğrulama
+│   │   ├── matches.py      # Maç yönetimi
+│   │   ├── coupons.py      # Kupon işlemleri
+│   │   └── forum.py        # Forum işlemleri
+│   ├── services/            # İş mantığı katmanı
+│   │   ├── auth_services.py
+│   │   ├── match_services.py
+│   │   ├── coupon_services.py
+│   │   └── forum_services.py
+│   ├── middleware/          # Ara yazılım katmanı
+│   │   ├── auth.py         # JWT token doğrulama
+│   │   ├── rate_limit.py   # Rate limiting
+│   │   └── error_handler.py # Hata yönetimi
+│   └── utils/               # Yardımcı fonksiyonlar
+│       └── security.py     # Şifre hash'leme
+├── main.py                  # Ana giriş noktası
+├── check.py                 # Maç sonuç kontrolü
+├── get_odds.py             # Mackolik'ten oran çekme
+├── get_match_code.py       # Maç kodlarını alma
+└── requirements.txt         # Python bağımlılıkları
 ```
 
+## 🔧 Kurulum
 
-## Dağıtım
-```powershell
+### Gereksinimler
+
+- Python 3.8+
+- Firebase CLI
+- Firebase Projesi
+
+### Adımlar
+
+1. **Firebase CLI kurulumu:**
+```bash
+npm install -g firebase-tools
+```
+
+2. **Firebase'e giriş:**
+```bash
 firebase login
-firebase use <PROJE_ID>
+```
+
+3. **Proje dizininde:**
+```bash
+cd functions
+pip install -r requirements.txt
+```
+
+4. **Firebase Functions'ı deploy et:**
+```bash
 firebase deploy --only functions
 ```
-- Varsayılan bölge genellikle `us-central1`.
 
-## Kullanım
-Dağıtımdan sonra fonksiyon URL’leri (örnek):
-- `mackolik`: `https://us-central1-<PROJE_ID>.cloudfunctions.net/mackolik`
-- `digersekme`: `https://us-central1-<PROJE_ID>.cloudfunctions.net/digersekme`
+## 📡 API Endpoint'leri
 
-Örnek istek:
-```powershell
-# Sağlık kontrolü
-Invoke-WebRequest "https://us-central1-<PROJE_ID>.cloudfunctions.net/mackolik"
+### 🔐 Kimlik Doğrulama
 
-# Scrape + DB yazma
-Invoke-WebRequest "https://us-central1-<PROJE_ID>.cloudfunctions.net/digersekme"
-```
+#### Kullanıcı Kaydı
+```http
+POST /auth/register
+Content-Type: application/json
 
-## Veri Şeması (Realtime Database: `maclar`)
-`digersekme` çağrısı sonrasında Realtime DB’de `maclar` düğümünde şu biçimde kayıtlar oluşur:
-```json
 {
-  "1234567": {
-    "Taraflar": "TakımA - TakımB",
-    "Maç Kodu": 1234567,
-    "MS 1": "1.65",
-    "MS X": "3.20",
-    "MS 2": "2.45"
-  },
-  "2345678": { "...": "..." }
+  "username": "kullanici_adi",
+  "password": "güvenli_şifre123"
 }
 ```
-Notlar:
-- Alan adları `/` içermeyecek şekilde normalize edilir (örn. `/` → `-`).
-- `.` karakterleri anahtar adlarında `'nci` ile değiştirilir (Firebase RTDB anahtar kısıtları).
-- Oran `-` ise `"1"` olarak normalize edilir.
 
-## Güvenlik
-`dbrules.json` şu an herkese açık (geliştirme amaçlı):
+#### Kullanıcı Girişi
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "username": "kullanici_adi",
+  "password": "güvenli_şifre123"
+}
+```
+
+### ⚽ Maç Yönetimi
+
+#### Maçları Yenile
+```http
+GET /matches/refresh
+```
+
+#### Maç Detayları
+```http
+GET /matches/details          # Tüm maçlar
+GET /matches/details/{id}     # Belirli maç
+```
+
+### 🎫 Kupon İşlemleri
+
+#### Kupon Oluştur
+```http
+POST /coupons/
+Authorization: Bearer {JWT_TOKEN}
+Content-Type: application/json
+
+{
+  "id": "unique_coupon_id",
+  "coupons": [
+    {
+      "id": "match_id",
+      "taraflar": "Ev Sahibi vs Deplasman",
+      "iddaa": "Maç Sonucu",
+      "oran": 1.85,
+      "tahmin": "1"
+    }
+  ],
+  "betAmount": 10
+}
+```
+
+#### Kuponları Kontrol Et (Admin)
+```http
+GET /coupons/check
+Authorization: Bearer {ADMIN_JWT_TOKEN}
+```
+
+### 💬 Forum Sistemi
+
+#### Blog Oluştur
+```http
+POST /forum/blog
+Authorization: Bearer {JWT_TOKEN}
+Content-Type: application/json
+
+{
+  "id": "blog_id",
+  "coupons": "kupon_verisi"
+}
+```
+
+#### Blogları Listele
+```http
+GET /forum/blog
+```
+
+#### Yorum Ekle
+```http
+POST /forum/comment
+Authorization: Bearer {JWT_TOKEN}
+Content-Type: application/json
+
+{
+  "post_id": "blog_id",
+  "comment": "Yorum metni"
+}
+```
+
+#### Yorumları Listele
+```http
+GET /forum/comment?post_id={blog_id}
+```
+
+## 🔒 Güvenlik Özellikleri
+
+### JWT Token Sistemi
+- 24 saat geçerli token'lar
+- Kullanıcı rolü tabanlı yetkilendirme
+- Güvenli token doğrulama
+
+### Şifre Güvenliği
+- bcrypt ile hash'leme
+- Güçlü şifre kuralları:
+  - En az 8 karakter
+  - Büyük/küçük harf
+  - Sayı ve özel karakter
+
+### Rate Limiting
+- IP başına saatlik 100 istek sınırı
+- API kötüye kullanımını önleme
+
+## 🎯 Futbol Tahmin Sistemi
+
+### Desteklenen Bahis Türleri
+
+- **Maç Sonucu**: 1, X, 2
+- **Çifte Şans**: 1X, 12, X2
+- **Alt/Üst**: 1.5, 2.5, 3.5, 4.5
+- **Karşılıklı Gol**: Var/Yok
+- **İlk Gol**: Ev Sahibi/Deplasman/Yok
+- **Korner Bahisleri**: Alt/Üst, Tek/Çift
+- **Yarı Sonuçları**: 1. Yarı, 2. Yarı
+- **Handikap**: Çeşitli handikap seçenekleri
+
+### Otomatik Sonuç Kontrolü
+- Maç sonuçlarını otomatik kontrol
+- Kazanan kuponlar için otomatik ödeme
+- Gerçek zamanlı bakiye güncelleme
+
+## 🗄️ Veritabanı Yapısı
+
+### Firebase Realtime Database
+
 ```json
 {
-  "rules": { 
-    ".read": true,
-    ".write": true
+  "users": {
+    "username": {
+      "password": "hashed_password",
+      "balance": 200,
+      "role": "user",
+      "coupons": {},
+      "created_at": "timestamp"
+    }
+  },
+  "matches": {
+    "match_id": {
+      "Taraflar": "Ev Sahibi vs Deplasman",
+      "Tarih": "2024-01-01",
+      "Lig": "Süper Lig",
+      "Maç Sonucu": {
+        "1": 1.85,
+        "X": 3.20,
+        "2": 4.50
+      }
+    }
+  },
+  "matchesDetailed": {
+    "match_id": {
+      "Taraf": {},
+      "Alt_Üst": {},
+      "Goller": {},
+      "Korner_Kart": {}
+    }
+  },
+  "blogs": {
+    "blog_id": {
+      "coupon": "kupon_verisi",
+      "author": "username",
+      "created_at": "timestamp",
+      "comments": {}
+    }
   }
 }
 ```
-Üretimde mutlaka kimlik doğrulama ve yetkilendirme kısıtları tanımlayın.
 
-## Performans ve Limitler
-- `max_instances=10`: Ani trafik artışına karşı maliyet/performans dengesini sağlar.
-- `timeout_sec=540`: Scraping uzun sürebilir. Ücretsiz kota ve hedef sitenin kullanım şartlarını dikkate alın.
-- Periyodik çalıştırma gerekiyorsa Cloud Scheduler + IAM ile güvenli tetikleme düşünün.
+## 🚀 Deployment
 
-## Geliştirme İpuçları
-- Yerel testlerde etik scraping yapın, istekleri aralıklı gönderin.
-- Çok sık tetikleme gerekiyorsa oranı düşürün ve hedef siteyi aşırı yüklemeyin.
+### Firebase Functions
+```bash
+firebase deploy --only functions
+```
 
-## Lisans ve Yasal Uyarı
-Bu proje, eğitim/deney amaçlı scraping içerir. Hedef sitenin kullanım şartlarına, robots.txt politikasına ve yerel yasalara uyduğunuzdan emin olun. Üçüncü taraf içerik ve markalar ilgili sahiplerine aittir.
+### Cloud Run (Alternatif)
+```bash
+gcloud run deploy tahmingo-api \
+  --source . \
+  --platform managed \
+  --region europe-west1 \
+  --allow-unauthenticated
+```
+
+## 📊 Performans
+
+- **Rate Limiting**: 100 istek/saat
+- **Max Instances**: 10 (Firebase Functions)
+- **Response Time**: <500ms (ortalama)
+- **Uptime**: %99.9+ (Firebase SLA)
+
+## 🔍 Monitoring
+
+### Health Check
+```http
+GET /health
+```
+
+### Ana Sayfa
+```http
+GET /
+```
+
+## 🛠️ Geliştirme
+
+### Lokal Geliştirme
+```bash
+cd functions
+python main.py
+```
+
+### Test
+```bash
+# Test endpoint'leri
+curl http://localhost:8080/health
+curl http://localhost:8080/
+```
+
+## 📝 Lisans
+
+Bu proje özel kullanım için geliştirilmiştir.
+
+## 🤝 Katkıda Bulunma
+
+1. Fork yapın
+2. Feature branch oluşturun (`git checkout -b feature/AmazingFeature`)
+3. Commit yapın (`git commit -m 'Add some AmazingFeature'`)
+4. Push yapın (`git push origin feature/AmazingFeature`)
+5. Pull Request oluşturun
+
+## 📞 İletişim
+
+Proje sahibi: [Adınız]
+Email: [email@example.com]
+
+---
+
+**TahminGO Backend API** - Futbol tahmin uygulamanız için güçlü ve güvenli backend servisi 🚀⚽
 
 
