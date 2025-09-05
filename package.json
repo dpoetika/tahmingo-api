@@ -1,5 +1,5 @@
 {
-  "name": "tahmingo-api",
+  "name": "live-scores",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
@@ -9,14 +9,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dpoetika/tahmingo-api.git"
+    "url": "git+https://github.com/dpoetika/live-scores.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/dpoetika/tahmingo-api/issues"
+    "url": "https://github.com/dpoetika/live-scores/issues"
   },
-  "homepage": "https://github.com/dpoetika/tahmingo-api#readme",
+  "homepage": "https://github.com/dpoetika/live-scores#readme",
   "description": "",
   "dependencies": {
     "axios": "^1.11.0",
